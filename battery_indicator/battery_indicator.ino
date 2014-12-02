@@ -24,25 +24,53 @@ void setup() {
   // initialize the robot
   Robot.begin();
   
-
   // initialize the screen
   Robot.beginTFT();
   
-  Robot.beginSD();
-  
-    //The image is pulled from sd card
-  Robot.drawBMP("intro.bmp",0,0);
-  
+  // Black screen
+  Robot.background(0,0,0);
+
+  batteryDraw();
+  batteryUpdate();
 }
-void loop(){
+void loop()
+{
+  batteryUpdate();
+  delay(3000);
+}
+
+void batteryDraw()
+{
+  Robot.stroke(255, 255, 255); 
+  // Body
+  Robot.line(115, 0, 115, 6);
+  Robot.line(115, 0, 125, 0); 
+  Robot.line(115, 5, 125, 5);
+  // Tip
+  Robot.line(125, 1, 127, 1);
+  Robot.line(125, 4, 127, 4);
+  Robot.line(127, 1, 127, 5);
+}
+
+void batteryUpdate()
+{
+  Robot.noStroke();
   value_old = value;
-  
-  // read a value
   value = readVcc();
-
-
+  int level = map(value, 4400, 5000, 1, 11);
+  if (level < 3) {
+    Robot.fill(255,0,0); 
+  } else if (level < 7) {
+    Robot.fill(0,0,255); 
+  } else {
+    Robot.fill(0,255,0); 
+  }
+  Robot.rect(116, 1, level, 4);
+  
+  // Large number center screen 
+  // @todo: remove
   // Clear
-  Robot.stroke(255,255,255);
+  Robot.stroke(0,0,0);
   Robot.textSize(3);
   Robot.text(value_old, 15, 50); 
   // Write
@@ -52,12 +80,10 @@ void loop(){
   
   Robot.textSize(2);
   Robot.text("mV", 92, 58); 
-
-
-  delay(3000);
 }
 
-long readVcc() {
+long readVcc() 
+{
   // Read 1.1V reference against AVcc
   // set the reference to Vcc and the measurement to the internal 1.1V reference
   #if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
