@@ -1,18 +1,5 @@
 /*
- LCD Debug Print
- 
- Use the Robot's library function debugPrint() to
- quickly send a sensor reading to the robot's creen.
- 
- Circuit:
- * Arduino Robot
- 
- created 1 May 2013
- by X. Yang
- modified 12 May 2013
- by D. Cuartielles
- 
- This example is in the public domain
+ Battery indicator on the TFT screen.
  */
 
 #include <ArduinoRobot.h>
