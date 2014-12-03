@@ -8,6 +8,8 @@ int value;
 int value_old;
 
 void setup() {
+  Serial.begin(57600);
+  
   // initialize the robot
   Robot.begin();
   
@@ -22,8 +24,10 @@ void setup() {
 }
 void loop()
 {
+  
   batteryUpdate();
-  delay(100);
+ 
+  delay(2000);
 }
 
 void batteryDraw()
@@ -45,6 +49,11 @@ int batteryUpdate()
   Robot.noStroke();
   value_old = value;
   value = batteryVcc();
+  
+  if (value == -1) {
+    // Not got a value yet
+    value = value_old;
+  }
  
   if (value == value_old) {
     // No need to redraw the same value to the screen.
@@ -75,10 +84,9 @@ int batteryUpdate()
   Robot.textSize(2);
   Robot.text("mV", 92, 58); 
   
-
-  
   return value;
 }
+
 
 int batteryVcc() 
 {
@@ -98,13 +106,19 @@ int batteryVcc()
     ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
   #endif  
  
-  delay(2); // Wait for Vref to settle
+  // prescaler of 32, speed's better than accuracy.
+  ADCSRA |= _BV(ADPS2) | _BV(ADPS0);
+ 
+  // Here's the blocking part, 
+  // but it's not a bad idea as you don't want analogRead() messing the readings
+ 
+  // Wait for Vref to settle
+  delayMicroseconds(500);
   ADCSRA |= _BV(ADSC); // Start conversion
   while (bit_is_set(ADCSRA,ADSC)); // measuring
    
   uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH  
   uint8_t high = ADCH; // unlocks both
-   
   long result = (high<<8) | low;
   
   // return registries to previous settings, just in case.
