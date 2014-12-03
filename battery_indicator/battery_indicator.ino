@@ -23,7 +23,7 @@ void setup() {
 void loop()
 {
   batteryUpdate();
-  delay(3000);
+  delay(100);
 }
 
 void batteryDraw()
@@ -39,16 +39,23 @@ void batteryDraw()
   Robot.line(127, 1, 127, 5);
 }
 
-void batteryUpdate()
+int batteryUpdate()
 {
+    
   Robot.noStroke();
   value_old = value;
-  value = readVcc();
-  int level = map(value, 4400, 5000, 1, 11);
+  value = batteryVcc();
+ 
+  if (value == value_old) {
+    // No need to redraw the same value to the screen.
+    return value;
+  }
+
+  int level = map(constrain(value, 4400, 5000), 4400, 5000, 1, 11);
   if (level < 3) {
     Robot.fill(255,0,0); 
   } else if (level < 7) {
-    Robot.fill(0,0,255); 
+    Robot.fill(255,255,0); 
   } else {
     Robot.fill(0,255,0); 
   }
@@ -67,10 +74,18 @@ void batteryUpdate()
   
   Robot.textSize(2);
   Robot.text("mV", 92, 58); 
+  
+
+  
+  return value;
 }
 
-long readVcc() 
+int batteryVcc() 
 {
+  byte original_admux = ADMUX;
+  byte original_adcsra = ADCSRA;
+  byte original_adcsrb = ADCSRB;
+  
   // Read 1.1V reference against AVcc
   // set the reference to Vcc and the measurement to the internal 1.1V reference
   #if defined(__AVR_ATmega32U4__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -86,12 +101,17 @@ long readVcc()
   delay(2); // Wait for Vref to settle
   ADCSRA |= _BV(ADSC); // Start conversion
   while (bit_is_set(ADCSRA,ADSC)); // measuring
- 
+   
   uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH  
   uint8_t high = ADCH; // unlocks both
- 
+   
   long result = (high<<8) | low;
+  
+  // return registries to previous settings, just in case.
+  ADMUX = original_admux;
+  ADCSRA = original_adcsra;
+  ADCSRB = original_adcsrb;
  
   result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
-  return result; // Vcc in millivolts
+  return (int) result; // Vcc in millivolts
 }
