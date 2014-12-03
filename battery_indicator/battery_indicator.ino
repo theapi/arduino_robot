@@ -28,7 +28,7 @@ void loop()
 
   int bat_val = battery.update();
   if (bat_val != bat_val_prev) {
-    bat_val_prev = bat_val;
+    
     // Large number center screen 
     // Clear
     Robot.stroke(0,0,0);
@@ -41,6 +41,8 @@ void loop()
     
     Robot.textSize(2);
     Robot.text("mV", 92, 58); 
+    
+    bat_val_prev = bat_val;
   }
  
   delay(2000);
