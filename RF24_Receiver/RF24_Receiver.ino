@@ -57,6 +57,8 @@ byte tx_buf[10];
 void setup() 
 {
 
+  tx_buf[0] = '-';
+  tx_buf[1] = DEVICE_ID;
     
   //pinMode(SS, OUTPUT);
     
@@ -105,6 +107,7 @@ void loop(void)
     byte c = Serial1.read();
     if (c == 's') {
       Serial1.write(tx_buf, 10);
+      Serial1.flush(); // wait for the message to be sent
     }
   }
   

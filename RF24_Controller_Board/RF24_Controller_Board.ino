@@ -65,7 +65,7 @@ void loop()
 void getMotorStatus()
 {
   Serial1.write('s');
-  delay(2); // wait for the message to get through
+  Serial1.flush(); // wait for the message to be sent
   
   processMotorMessage(); 
     
