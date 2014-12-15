@@ -25,11 +25,11 @@ const int rx_buf_size = 10;
 byte rx_buf[rx_buf_size];
 byte rx_buf_index = 0;
 
-char screen_radio_msg[12];
+char screen_radio_msg[20];
 
 void setup() 
 {
-  Serial.begin(57600);
+  //Serial.begin(57600);
   // initialize the robot
   Robot.begin();
   
@@ -45,14 +45,30 @@ void setup()
 
   Robot.stroke(255,255,255);
  
-  Serial.println(" BEGIN ");
+  //Serial.println(" BEGIN ");
+  
+  //Robot.text("BEGIN", 10, 10);
 }
 
 void loop()
 {
   
-  processMotorMessage();
+  //processMotorMessage();
   
+  
+  getMotorStatus();
+  
+  delay(1000);
+}
+
+
+void getMotorStatus()
+{
+  Serial1.write('s');
+  delay(2); // wait for the message to get through
+  
+  processMotorMessage(); 
+    
 }
 
 void processMotorMessage()
@@ -76,21 +92,22 @@ void processMotorMessage()
   if (msg_available) {
     // Get the message out of the buffer now.
     
-    int a = (rx_buf[1] << 8) | rx_buf[2];
-    int b = (rx_buf[3] << 8) | rx_buf[4];
-    
+    int msg_id = (rx_buf[2] << 8) | rx_buf[3];
+    int a = (rx_buf[4] << 8) | rx_buf[5];
+    int b = (rx_buf[6] << 8) | rx_buf[7];
+    /*
     Serial.print("GOT: ");
     Serial.print((char)rx_buf[0]);
     Serial.print(" : ");
     Serial.print(a);
     Serial.print(" : ");
     Serial.println(b);
-    
+    */
     // Clear the old
     Robot.stroke(0,0,0);
     Robot.text(screen_radio_msg, 0, 0);
     
-    sprintf(screen_radio_msg, "%c, %d, %d", rx_buf[0], a, b);
+    sprintf(screen_radio_msg, "%c, %c, %d, %d, %d", rx_buf[0], rx_buf[1], msg_id, a, b);
     Robot.stroke(255,255,255);
     Robot.text(screen_radio_msg, 0, 0);
   }

@@ -52,6 +52,7 @@ payload_t payload;
 
 uint16_t msg_id = 0;
 
+byte tx_buf[10];
 
 void setup() 
 {
@@ -100,6 +101,13 @@ void loop(void)
   RobotMotor.parseCommand();
   RobotMotor.process();
   
+  if (Serial1.available()) {
+    byte c = Serial1.read();
+    if (c == 's') {
+      Serial1.write(tx_buf, 10);
+    }
+  }
+  
   // Check for a message from the controller
   if (radio.available()) {
     // Get the payload
@@ -116,24 +124,16 @@ void loop(void)
 
 void processPayload()
 {
-  // Tell the controller board
-  
-  // TMP
-  payload.b = 777;
-  
-  byte buf[10];
-  //buf[0] = payload.device_id;
-  //buf[1] = payload.type;
-  //buf[2] = payload.msg_id;
-  //buf[2] = payload.a;
-  //buf[4] = payload.z;
-  
-  buf[0] = 'R'; // Radio messsage
-  buf[1] = (payload.a >> 8); 
-  buf[2] = payload.a; 
-  buf[3] = (payload.b >> 8); 
-  buf[4] = payload.b; 
-  Serial1.write(buf, 10);
+  // Create a transfer buffer of the relevant data.  
+  tx_buf[0] = payload.type; 
+  tx_buf[1] = payload.device_id;
+  tx_buf[2] = (payload.msg_id >> 8); 
+  tx_buf[3] = payload.msg_id; 
+  tx_buf[4] = (payload.a >> 8); 
+  tx_buf[5] = payload.a; 
+  tx_buf[6] = (payload.b >> 8); 
+  tx_buf[7] = payload.b; 
+  //Serial1.write(tx_buf, 10);
   
   
   //uint8_t *bytePtr = (uint8_t*)&payload;
