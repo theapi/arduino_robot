@@ -18,8 +18,8 @@
 #include "RF24.h"
 #include "printf.h"
 
-#define PIN_CE  TK4
-#define PIN_CSN TK2
+#define PIN_CE  SCL
+#define PIN_CSN SDA
  
 // The address that this node listens on
 byte address[6] = RX_ADDRESS;
@@ -55,17 +55,20 @@ uint16_t msg_id = 0;
 
 void setup() 
 {
-  Serial.begin(57600);
-      while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }
+
     
-  delay(2000);
-  printf_begin();
-  printf("\n\r RF24_Receiver on address: %s \n\r", RX_ADDRESS);
+  //pinMode(SS, OUTPUT);
+    
+  //delay(2000);
+  //printf_begin();
+  //printf("\n\r RF24_Receiver on address: %s \n\r", RX_ADDRESS);
  
   // initialize the robot
   RobotMotor.begin();
+  
+  // Restart internal serial comms at a faster rate.
+  Serial1.end();
+  Serial1.begin(57600);
   
   // Setup and configure rf radio
   radio.begin(); // Start up the radio
@@ -84,7 +87,7 @@ void setup()
   // Start listening
   radio.startListening(); 
   
-  radio.printDetails(); 
+  //radio.printDetails(); 
   
 
   
@@ -108,14 +111,34 @@ void loop(void)
     processPayload();
     
   }
-  
 
 }
 
 void processPayload()
 {
-  //Robot.debugPrint(payload.a);
+  // Tell the controller board
   
+  // TMP
+  payload.b = 777;
+  
+  byte buf[10];
+  //buf[0] = payload.device_id;
+  //buf[1] = payload.type;
+  //buf[2] = payload.msg_id;
+  //buf[2] = payload.a;
+  //buf[4] = payload.z;
+  
+  buf[0] = 'R'; // Radio messsage
+  buf[1] = (payload.a >> 8); 
+  buf[2] = payload.a; 
+  buf[3] = (payload.b >> 8); 
+  buf[4] = payload.b; 
+  Serial1.write(buf, 10);
+  
+  
+  //uint8_t *bytePtr = (uint8_t*)&payload;
+  //Serial1.write(bytePtr, sizeof(payload));
+ /* 
     printf ("Got: %c %c %ld %d %d %d %d %d %d %d %d \n",
     payload.device_id,
     payload.type,
@@ -128,7 +151,7 @@ void processPayload()
     payload.d,
     payload.y,
     payload.z);
-    
+    */
   // Proof of concept
   if (payload.a == 70) {
     radio.stopListening();
@@ -147,9 +170,9 @@ void processPayload()
     payload.y = 0;
     payload.z = 0;
     
-    printf("sending %d, %d \n", payload.msg_id, payload.a);    
+    //printf("sending %d, %d \n", payload.msg_id, payload.a);    
     if (!radio.write( &payload, sizeof(payload))) { 
-      printf(" failed.\n\r"); 
+      //printf(" failed.\n\r"); 
     }
     
     msg_id++; // Let it overflow
