@@ -54,6 +54,9 @@ uint16_t msg_id = 0;
 
 byte tx_buf[10];
 
+int speedL = 0;
+int speedR = 0;
+
 void setup() 
 {
 
@@ -155,6 +158,7 @@ void processPayload()
     payload.y,
     payload.z);
     */
+    
   // Proof of concept
   if (payload.a == 70) {
     radio.stopListening();
@@ -180,6 +184,35 @@ void processPayload()
     
     msg_id++; // Let it overflow
     radio.startListening(); 
+  } 
+  
+  if (payload.c > 0) {
+    // Left motor command
+    if (payload.c > 255) {
+      // Forward 0 -> 255
+      speedL = constrain(payload.c - 255, 0, 255);
+    } else {
+      // Backward -1 -> -255
+      speedL = 1 - constrain(payload.c , 0, 255);
+    }
+  } else {
+    speedL = 0; // stopped
   }
+  
+  if (payload.d > 0) {
+    // Right motor command
+    if (payload.d > 255) {
+      // Forward 0 -> 255
+      speedR = constrain(payload.d - 255, 0, 255);
+    } else {
+      // Backward -1 -> -255
+      speedR = 1 - constrain(payload.d , 0, 255);
+    }
+  } else {
+    speedR = 0; // stopped
+  }
+  
+  RobotMotor.motorsWrite(speedL, speedR);
+  
 }
 

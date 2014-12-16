@@ -3,23 +3,7 @@
 //#include <SPI.h>
 #include "nRF24L01.h"
 #include "RF24.h"
-#include "printf.h"
-
-typedef struct{
-  int32_t timestamp;
-  uint16_t msg_id;
-  uint16_t vcc;
-  uint16_t a;
-  uint16_t b;
-  uint16_t c;
-  uint16_t d;
-  uint8_t type;
-  uint8_t device_id;
-  int8_t y;
-  int8_t z;
-}
-payload_t;
-payload_t payload;
+//#include "printf.h"
 
 const int rx_buf_size = 10;
 byte rx_buf[rx_buf_size];
