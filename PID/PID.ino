@@ -21,7 +21,7 @@ double Setpoint, Input, Output;
 int inputPin=0, outputPin=3;
 
 //Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint,2,5,1, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, 1, 5, 1, DIRECT);
 unsigned long serialTime; //this will help us know when to talk with processing
 
 int count =0;
@@ -36,7 +36,7 @@ int speed_motor_left = 0;
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(57600);
   pinMode(PIN_INT_LEFT, INPUT );
 
   
@@ -45,12 +45,13 @@ void setup()
   
   //initialize the variables we're linked to
   Input = 0;
-  Setpoint = 100;
+  Setpoint = 600;
 
   //turn the PID on
   myPID.SetMode(AUTOMATIC);
 
   //Serial.println("Begin");
+      
 }
 
 void loop()
@@ -67,36 +68,47 @@ void loop()
         count = 0;
         //Serial.println(ms_per_int);
         
+        ms_per_int = constrain(ms_per_int, 100, 700);
+        
         // Convert to byte value for processing for now
         speed_motor_left = map(ms_per_int, 100, 700, 700, 100);
         //speed_motor_left = ms_per_int;
         Input = speed_motor_left;
-        //Serial.print(" : "); Serial.print(pwm_motor_left);
-        //Serial.print(" - "); Serial.println(speed_motor_left);
+        //Serial.print(" : "); Serial.print(speed_motor_left);
+        //Serial.print(" - "); Serial.println(Input);
       }
       
     }
     count++; // Up the sample count
     
+    /*
     speed_requested = analogRead(PIN_POT) / 4;
     if (speed_requested < 75) {
       // Can't go slower than this
       speed_requested = 0; 
     }
-    
+    */
     //Serial.println(speed_requested);
     
     //pid-related code
     myPID.Compute();
     
+    
+    pwm_motor_left = Output;
+    pwm_motor_left = constrain(pwm_motor_left, 100, 180);
+    //if (pwm_motor_left < 90) pwm_motor_left = 90;
+    analogWrite(PIN_MOTOR_LEFT, pwm_motor_left);
+    
+    /*
     // Send it to the motor if changed
     if (pwm_motor_left != speed_requested) {
       pwm_motor_left = speed_requested;
       
-      //byte pwm_motor_left = map(Output, 0, 1000, 0, 255);
-      //if (pwm_motor_left < 75) pwm_motor_left = 0;
+      //pwm_motor_left = map(Output, 0, 1000, 0, 255);
+      if (pwm_motor_left < 75) pwm_motor_left = 0;
       analogWrite(PIN_MOTOR_LEFT, pwm_motor_left);
     }
+    */
     
   }
   
