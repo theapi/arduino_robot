@@ -21,7 +21,7 @@ double Setpoint, Input, Output;
 int inputPin=0, outputPin=3;
 
 //Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint, 1, 5, 1, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, 0.2, 0.1, 0.2, DIRECT);
 unsigned long serialTime; //this will help us know when to talk with processing
 
 int count =0;
@@ -45,10 +45,12 @@ void setup()
   
   //initialize the variables we're linked to
   Input = 0;
-  Setpoint = 600;
+  Setpoint = 500;
 
   //turn the PID on
   myPID.SetMode(AUTOMATIC);
+  myPID.SetOutputLimits(89, 255);
+  myPID.SetSampleTime(sample_interval-1); // ensure a pid compute for every speed sample
 
   //Serial.println("Begin");
       
@@ -65,50 +67,62 @@ void loop()
       if (sample == LOW) {
         // Just seen a black bit.
         ms_per_int = count * sample_interval;
-        count = 0;
-        //Serial.println(ms_per_int);
         
-        ms_per_int = constrain(ms_per_int, 100, 700);
-        
-        // Convert to byte value for processing for now
-        speed_motor_left = map(ms_per_int, 100, 700, 700, 100);
-        //speed_motor_left = ms_per_int;
-        Input = speed_motor_left;
-        //Serial.print(" : "); Serial.print(speed_motor_left);
-        //Serial.print(" - "); Serial.println(Input);
+        if (ms_per_int > 700) {
+          Input = 0;
+        } else {
+          
+          // Switch low to high
+          Input = map(ms_per_int, 0, 700, 700, 0);
+          //speed_motor_left = map(ms_per_int, 0, 1023, 1023, 0);
+          
+          //speed_motor_left = ms_per_int;
+          //Input = speed_motor_left;
+          //Serial.print(" : "); Serial.print(speed_motor_left);
+          //Serial.print(" - "); Serial.println(Input);
+          
+          count = 0;
+        }
+      } else {
+        // Check for stopped/too slow
+        ms_per_int = count * sample_interval;
+        if (ms_per_int > 700) {
+          count = 0;
+          Input = 0;
+        }
       }
       
+    } else {
+      
+      // Nah not right yet for slow
+      
+      // No change in light
+      // Check for stopped/too slow
+      ms_per_int = count * sample_interval;
+      if (ms_per_int > 700) {
+        count = 0;
+        Input = 0;
+      }
     }
+    
     count++; // Up the sample count
     
-    /*
-    speed_requested = analogRead(PIN_POT) / 4;
-    if (speed_requested < 75) {
-      // Can't go slower than this
-      speed_requested = 0; 
-    }
-    */
-    //Serial.println(speed_requested);
-    
-    //pid-related code
+    // Do the computation now
     myPID.Compute();
     
     
     pwm_motor_left = Output;
-    pwm_motor_left = constrain(pwm_motor_left, 100, 180);
-    //if (pwm_motor_left < 90) pwm_motor_left = 90;
+    //pwm_motor_left = constrain(pwm_motor_left, 100, 180);
+    if (pwm_motor_left < 90) pwm_motor_left = 0;
     analogWrite(PIN_MOTOR_LEFT, pwm_motor_left);
+       
     
-    /*
-    // Send it to the motor if changed
-    if (pwm_motor_left != speed_requested) {
-      pwm_motor_left = speed_requested;
-      
-      //pwm_motor_left = map(Output, 0, 1000, 0, 255);
-      if (pwm_motor_left < 75) pwm_motor_left = 0;
-      analogWrite(PIN_MOTOR_LEFT, pwm_motor_left);
+    Setpoint = analogRead(PIN_POT); // NB motor can't go faster than 700 :(
+    if (Setpoint < 90) {
+      // Can't go slower than this
+      Setpoint = 0; 
     }
-    */
+    
     
   }
   
@@ -117,7 +131,7 @@ void loop()
   if (millis()>serialTime) {
     SerialReceive();
     SerialSend();
-    serialTime+=500;
+    serialTime+=250;
   }
   
 
