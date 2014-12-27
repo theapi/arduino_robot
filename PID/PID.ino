@@ -21,7 +21,7 @@ double Setpoint, Input, Output;
 int inputPin=0, outputPin=3;
 
 //Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint, 1.0, 0.5, 0.0, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, 0.1, 0.5, 0.0, DIRECT);
 unsigned long serialTime; //this will help us know when to talk with processing
 
 int count =0;
@@ -33,6 +33,8 @@ unsigned long ms_per_int = 0; // How long since the last beam interrupt
 int speed_requested = 0;
 byte pwm_motor_left = 0;
 int speed_motor_left = 0;
+
+byte motor_stopped = 0;
 
 //int speed_current = 0;
 //int num_spokes = 5;
@@ -105,18 +107,10 @@ void loop()
       ms_per_int = count * sample_interval;
       if (ms_per_int > 700) {
         //count = 0;
-        //Input = 0;
-      }
-      
-      
-      if (count > 5) {
-      //Input = 0;
+        Input = 0;
         
       }
-      
-      if (count > 0) {
-      //Input = Input / count;
-      }
+
     }
     
     count++; // Up the sample count
@@ -126,16 +120,18 @@ void loop()
     
     
     pwm_motor_left = Output;
-    //pwm_motor_left = constrain(pwm_motor_left, 100, 180);
+    
     if (pwm_motor_left < 90) pwm_motor_left = 0;
     analogWrite(PIN_MOTOR_LEFT, pwm_motor_left);
        
-    
+  
     Setpoint = analogRead(PIN_POT); // NB motor can't go faster than 700 :(
-    if (Setpoint < 90) {
+    // Very high minimum set point currently
+    if (Setpoint < 420) {
       // Can't go slower than this
       Setpoint = 0; 
     }
+    
     
     
   }
