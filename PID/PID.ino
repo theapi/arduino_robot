@@ -34,6 +34,9 @@ int speed_requested = 0;
 byte pwm_motor_left = 0;
 int speed_motor_left = 0;
 
+//int speed_current = 0;
+//int num_spokes = 5;
+
 void setup()
 {
   Serial.begin(57600);
@@ -98,10 +101,21 @@ void loop()
       
       // No change in light
       // Check for stopped/too slow
+      
       ms_per_int = count * sample_interval;
       if (ms_per_int > 700) {
-        count = 0;
-        Input = 0;
+        //count = 0;
+        //Input = 0;
+      }
+      
+      
+      if (count > 5) {
+      //Input = 0;
+        
+      }
+      
+      if (count > 0) {
+      //Input = Input / count;
       }
     }
     
