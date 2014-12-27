@@ -21,7 +21,7 @@ double Setpoint, Input, Output;
 int inputPin=0, outputPin=3;
 
 //Specify the links and initial tuning parameters
-PID myPID(&Input, &Output, &Setpoint, 0.2, 0.1, 0.2, DIRECT);
+PID myPID(&Input, &Output, &Setpoint, 1.0, 0.5, 0.0, DIRECT);
 unsigned long serialTime; //this will help us know when to talk with processing
 
 int count =0;
