@@ -133,7 +133,7 @@ void processPayload()
     tx_payload.setType('q'); // light command
     tx_payload.setTimestamp(millis());
     tx_payload.setId(msg_id++);
-    tx_payload.setA(99);
+    tx_payload.setE(99);
     
     uint8_t tx_buffer[Nrf24Payload_SIZE];
     tx_payload.serialize(tx_buffer);
