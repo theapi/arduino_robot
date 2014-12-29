@@ -1,7 +1,7 @@
 
 /***** NB FOR MOTOR BOARD ***/
 
-#define DEVICE_ID 'D';
+#define DEVICE_ID 'D'
  
 //#define RX_ADDRESS "AAAAA"
 //#define RX_ADDRESS "BBBBB"
@@ -17,6 +17,7 @@
 #include "nRF24L01.h"
 #include "RF24.h"
 #include "printf.h"
+#include <Nrf24Payload.h>
 
 #define PIN_CE  SCL
 #define PIN_CSN SDA
@@ -28,27 +29,8 @@ int ack = 0;
 
 RF24 radio(PIN_CE, PIN_CSN);
 
-/**
- * Be carefull to ensure the struct size is the same as on the Pi.
- * Just having the same size variables is not enough.
- * @see http://www.delorie.com/djgpp/v2faq/faq22_11.html
- */
-typedef struct{
-  int32_t timestamp;
-  uint16_t msg_id;
-  uint16_t vcc;
-  uint16_t a;
-  uint16_t b;
-  uint16_t c;
-  uint16_t d;
-  uint8_t type;
-  uint8_t device_id;
-  int8_t y;
-  int8_t z;
-}
-payload_t;
-payload_t payload;
-
+Nrf24Payload rx_payload = Nrf24Payload();
+uint8_t rx[Nrf24Payload_SIZE];
 
 uint16_t msg_id = 0;
 
@@ -78,7 +60,7 @@ void setup()
   
   // Setup and configure rf radio
   radio.begin(); // Start up the radio
-  radio.setPayloadSize(sizeof(payload_t)); 
+  radio.setPayloadSize(Nrf24Payload_SIZE); 
   radio.setAutoAck(1); // Ensure autoACK is enabled
   radio.setRetries(0,15); // Max delay between retries & number of retries
   // Allow optional ack payloads
@@ -95,9 +77,6 @@ void setup()
   
   //radio.printDetails(); 
   
-
-  
- // Robot.debugPrint(sizeof(payload));
 }
 
 void loop(void)
@@ -121,7 +100,7 @@ void loop(void)
     radio.writeAckPayload(1, &ack, sizeof(ack));
     ack++; 
 
-    radio.read( &payload, sizeof(payload));  
+    radio.read( &rx, Nrf24Payload_SIZE); 
     processPayload();
     
   }
@@ -130,83 +109,67 @@ void loop(void)
 
 void processPayload()
 {
-  // Create a transfer buffer of the relevant data.  
-  tx_buf[0] = payload.type; 
-  tx_buf[1] = payload.device_id;
-  tx_buf[2] = (payload.msg_id >> 8); 
-  tx_buf[3] = payload.msg_id; 
-  tx_buf[4] = (payload.a >> 8); 
-  tx_buf[5] = payload.a; 
-  tx_buf[6] = (payload.b >> 8); 
-  tx_buf[7] = payload.b; 
-  //Serial1.write(tx_buf, 10);
+  rx_payload.unserialize(rx);
   
+  // Create an internal transfer buffer of the relevant data.  
+  //@todo provide usful data for the top board
+  tx_buf[0] = rx_payload.getType(); 
+  tx_buf[1] = rx_payload.getDeviceId();
+  tx_buf[2] = (rx_payload.getId() >> 8); 
+  tx_buf[3] = rx_payload.getId(); 
+  tx_buf[4] = (rx_payload.getA() >> 8); 
+  tx_buf[5] = rx_payload.getA(); 
+  tx_buf[6] = (rx_payload.getB() >> 8); 
+  tx_buf[7] = rx_payload.getA(); 
   
-  //uint8_t *bytePtr = (uint8_t*)&payload;
-  //Serial1.write(bytePtr, sizeof(payload));
- /* 
-    printf ("Got: %c %c %ld %d %d %d %d %d %d %d %d \n",
-    payload.device_id,
-    payload.type,
-    payload.timestamp,
-    payload.msg_id,
-    payload.vcc,
-    payload.a,
-    payload.b,
-    payload.c,
-    payload.d,
-    payload.y,
-    payload.z);
-    */
     
   // Proof of concept
-  if (payload.a == 70) {
+  if (rx_payload.getA() == 70) {
     radio.stopListening();
     
     // Prepare the message.
-    payload_t payload;
-    payload.device_id = DEVICE_ID;
-    payload.type = 'q';
-    payload.timestamp = millis();
-    payload.msg_id = msg_id;
-    payload.vcc = 0; //@TODO vcc
-    payload.a = 99;
-    payload.b = 0;
-    payload.c = 0;
-    payload.d = 0;
-    payload.y = 0;
-    payload.z = 0;
+    Nrf24Payload tx_payload = Nrf24Payload();      
+    tx_payload.setDeviceId(DEVICE_ID);
+    tx_payload.setType('q'); // light command
+    tx_payload.setTimestamp(millis());
+    tx_payload.setId(msg_id++);
+    tx_payload.setA(99);
     
+    uint8_t tx_buffer[Nrf24Payload_SIZE];
+    tx_payload.serialize(tx_buffer);
+
     //printf("sending %d, %d \n", payload.msg_id, payload.a);    
-    if (!radio.write( &payload, sizeof(payload))) { 
+    if (!radio.write( &tx_buffer, Nrf24Payload_SIZE)) { 
       //printf(" failed.\n\r"); 
     }
     
-    msg_id++; // Let it overflow
     radio.startListening(); 
   } 
   
-  if (payload.c > 0) {
+  int c = rx_payload.getC();
+  int d = rx_payload.getD();
+  
+  if (c > 0) {
     // Left motor command
-    if (payload.c > 255) {
+    if (c > 255) {
       // Forward 0 -> 255
-      speedL = constrain(payload.c - 255, 0, 255);
+      speedL = constrain(c - 255, 0, 255);
     } else {
       // Backward -1 -> -255
-      speedL = 1 - constrain(payload.c , 0, 255);
+      speedL = 1 - constrain(c , 0, 255);
     }
   } else {
     speedL = 0; // stopped
   }
   
-  if (payload.d > 0) {
+  if (d > 0) {
     // Right motor command
-    if (payload.d > 255) {
+    if (d > 255) {
       // Forward 0 -> 255
-      speedR = constrain(payload.d - 255, 0, 255);
+      speedR = constrain(d - 255, 0, 255);
     } else {
       // Backward -1 -> -255
-      speedR = 1 - constrain(payload.d , 0, 255);
+      speedR = 1 - constrain(d , 0, 255);
     }
   } else {
     speedR = 0; // stopped
